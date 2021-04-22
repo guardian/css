@@ -1,5 +1,5 @@
-//import { StyleSheet } from '@emotion/sheet'
-//import hash from "@emotion/hash";
+import { StyleSheet } from "@emotion/sheet";
+import hash from "@emotion/hash";
 
 export let debug = false; // set to true for debug logging
 
@@ -105,11 +105,7 @@ const log = (...things: any[]): void => {
 	}
 };
 
-// DOM element to insert CSS rules into
-//const DEFAULT_CONTAINER = "head";
-
-// Cache is used for interpolation purposes.
-// const cache = new Map<string, string>();
+// Cache helps avoid work, and can also be shipped client-side to save time on initial render?
 
 /**
  * css is the main utility of this library. It is used as tagged template
@@ -124,71 +120,56 @@ const log = (...things: any[]): void => {
  *
  * @returns an array of CSS rules or throws an error if invalid CSS
  */
-/* export const css = (
+export const cssPure = (
 	strings: TemplateStringsArray,
 	...args: string[]
-): Rule[] => {
+): CSS[] => {
 	// zip strings and args together
 	let res = "";
 
 	strings.forEach((s, i) => {
 		res += s.trim();
-		const arg = args[i];
+		res += args[i] || "";
+	});
+	const h = hash(res);
+	return parse(res, "." + h);
+};
 
-		// if a grouping element :focus { .. }
-		// then take it and grab middle
+type cssTTL = (strings: TemplateStringsArray, ...args: string[]) => string[];
 
-		if (arg) {
-			const fromCache = cache.get(arg);
-			res += fromCache ? fromCache : args[i].trim();
-		}
+interface Cache {
+	add: (style: CSS) => void;
+	flush: () => void;
+	serialise: () => string;
+}
 
-		//
+const StaticCache = (): Cache => {
+	let data: CSS[] = [];
+
+	return {
+		add: (style: CSS) => {
+			data.push(style);
+		},
+		flush: () => {
+			data = [];
+		},
+		serialise: (): string => data.map(serialise).join(""),
+	};
+};
+
+const SheetCache = (container: HTMLElement, key: string): Cache => {
+	const sheet = new StyleSheet({
+		key,
+		container,
 	});
 
-	console.log("-----");
-
-	const h = hash(res);
-	cache.set(h, res);
-	return h;
-}; */
-
-// handle interpolation, then nesting
-
-/* const unnest(css: string): Rule[] => {
-	// identify nested parts, extract, and lift.
-
-	const rules = []
-} */
-
-// type Cache = Map<String, String>;
-
-/**
- * serialise takes a Cache of CSS rules and converts it into a single string.
- * Useful for server-side rendering.
- */
-/* const serialise = (cache: Cache): string => {
-	return 'TODO';
-}
-
-interface Options {}
-
-/**
- * mount adds styles to an HTML element (so is intended for client-side use).
- */
-/* const mount = (el: HTMLElement, cache: Cache, options: Options): void => {
-
-}
-
-
-
-export const cssGen = ()
-
-// This is for testing purposes - as doesn't hash things
-export const cssRules = (
-	strings: TemplateStringsArray,
-	...args: string[]
-): string[] => {
-	return ["TODO"];
+	return {
+		add: (style: CSS) => {
+			sheet.insert(serialise(style));
+		},
+		flush: () => {
+			sheet.flush();
+		},
+		serialise: (): string => sheet.container.innerHTML,
+	};
 };
- */
