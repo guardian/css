@@ -4,11 +4,11 @@
 export let debug = false; // set to true for debug logging
 
 // CSS is a simplified model for CSS, but sufficient for our purposes. The body
-// is an ordered collection of strings (presumably CSS rules) and nested rules
-// (the CSS recursion).
+// is an ordered collection of strings (presumably CSS rules). CSS itself
+// doesn't nest so this can be flat too.
 export interface CSS {
 	selector: string;
-	body: (string | CSS)[];
+	body: string[];
 }
 
 const lexRule = (raw: string): [string | null, string] => {
@@ -22,15 +22,6 @@ const lexRule = (raw: string): [string | null, string] => {
 	}
 
 	return [raw, ""]; // asume entire thing is rule if no terminating semi-colon.
-};
-
-const lexPseudo = (raw: string): [string | null, string | null, string] => {
-	// not a pseudo-class (":..."), pseudo-element ("::..."), or media query ("@...")
-	if (!raw.startsWith(":") && !raw.startsWith("@")) {
-		return [null, null, raw];
-	}
-
-	return lexNested(raw);
 };
 
 const lexNested = (raw: string): [string | null, string | null, string] => {
@@ -62,6 +53,10 @@ const lexNested = (raw: string): [string | null, string | null, string] => {
 	return [null, null, raw];
 };
 
+// isPseudo is a very crude test for beginning of pseudo-element, pseudo-class,
+// or media-query.
+const isPseudo = (s: string): boolean => s === ":" || s === "@";
+
 export const parse = (raw: string, topClass: string): CSS[] => {
 	let css: CSS[] = [
 		{
@@ -74,19 +69,13 @@ export const parse = (raw: string, topClass: string): CSS[] => {
 	let currentCSS = css[0];
 
 	while (remaining.length) {
-		var [selector, body, rest] = lexPseudo(remaining);
-		log("pseudo", selector, body, rest);
-		if (selector && body) {
-			const nestedSelector = `${topClass}${selector}`;
-			css = css.concat(parse(body, nestedSelector));
-			remaining = rest;
-			continue;
-		}
-
 		var [selector, body, rest] = lexNested(remaining);
 		log("nested", selector, ",", body, ",", rest);
 		if (selector && body) {
-			currentCSS.body = currentCSS.body.concat(parse(body, selector));
+			const nestedSelector = isPseudo(selector[0])
+				? `${topClass}${selector}`
+				: `${topClass} ${selector}`;
+			css = css.concat(parse(body, nestedSelector));
 			remaining = rest;
 			continue;
 		}
@@ -104,6 +93,10 @@ export const parse = (raw: string, topClass: string): CSS[] => {
 	}
 
 	return css;
+};
+
+export const serialise = (css: CSS): string => {
+	return `${css.selector}{${css.body.join("")}}`;
 };
 
 const log = (...things: any[]): void => {

@@ -1,4 +1,4 @@
-import { parse } from "./index";
+import { parse, serialise } from "./index";
 import type { CSS } from "./index";
 
 test("parse simple rule", () => {
@@ -19,7 +19,11 @@ test("parse nested rule", () => {
 	const want: CSS[] = [
 		{
 			selector: topClass,
-			body: ["color: blue;", { selector: "a", body: ["color: red;"] }],
+			body: ["color: blue;"],
+		},
+		{
+			selector: `${topClass} a`,
+			body: ["color: red;"],
 		},
 	];
 
@@ -41,6 +45,41 @@ test("parse nested pseudo", () => {
 			body: [`content: "→";`],
 		},
 	];
+
+	expect(got).toEqual(want);
+});
+
+test("parse multi-nest", () => {
+	const topClass = "foo";
+	const input = `color: blue;a{text-decoration: underline;::after{content: "→";}}display:block;`;
+
+	const got = parse(input, topClass);
+	const want: CSS[] = [
+		{
+			selector: topClass,
+			body: ["color: blue;", "display:block;"],
+		},
+		{
+			selector: `${topClass} a`,
+			body: ["text-decoration: underline;"],
+		},
+		{
+			selector: `${topClass} a::after`,
+			body: [`content: "→";`],
+		},
+	];
+
+	expect(got).toEqual(want);
+});
+
+test("serialise", () => {
+	const input = {
+		selector: ".foo",
+		body: ["color: blue;", "display: block;"],
+	};
+
+	const got = serialise(input);
+	const want = `.foo{color: blue;display: block;}`;
 
 	expect(got).toEqual(want);
 });
