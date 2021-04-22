@@ -1,19 +1,46 @@
-import { css } from "./index";
-import hash from "@emotion/hash";
+import { parse } from "./index";
+import type { CSS } from "./index";
 
-test("interpolation", () => {
-	const a = css`
-		margin: 0 auto;
-	`;
-	const got = css`
-		color: blue;
-		${a}
-	`;
+test("parse simple rule", () => {
+	const input = `color: blue;`;
+	const topClass = "foo";
 
-	const want = hash("color: blue;margin: 0 auto;");
-	expect(got).toBe(want);
+	const got = parse(input, topClass);
+	const want: CSS[] = [{ selector: topClass, body: ["color: blue;"] }];
+
+	expect(got).toEqual(want);
 });
 
-test.todo("& selector");
+test("parse nested rule", () => {
+	const topClass = "foo";
+	const input = `color: blue;a{color: red;}`;
 
-test.todo(": pseudo-selectors");
+	const got = parse(input, topClass);
+	const want: CSS[] = [
+		{
+			selector: topClass,
+			body: ["color: blue;", { selector: "a", body: ["color: red;"] }],
+		},
+	];
+
+	expect(got).toEqual(want);
+});
+
+test("parse nested pseudo", () => {
+	const topClass = "foo";
+	const input = `color: blue;::after{content: "→";}`;
+
+	const got = parse(input, topClass);
+	const want: CSS[] = [
+		{
+			selector: topClass,
+			body: ["color: blue;"],
+		},
+		{
+			selector: `${topClass}::after`,
+			body: [`content: "→";`],
+		},
+	];
+
+	expect(got).toEqual(want);
+});
