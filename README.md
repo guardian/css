@@ -14,7 +14,7 @@ configure a Cache. There are two types:
 
 Instantiate what you need, and then pass it to `cssGen`:
 
-    $ const cache = new StaticCache();
+    $ const cache = StaticCache();
     $ const css = cssGen(cache);
 
 You can then use `css` similar to @emotion. For example:

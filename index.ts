@@ -1,7 +1,7 @@
 import { StyleSheet } from "@emotion/sheet";
 import hash from "@emotion/hash";
 
-export let debug = false; // set to true for debug logging
+export let debug = true; // set to true for debug logging
 
 // CSS is a simplified model for CSS, but sufficient for our purposes. The body
 // is an ordered collection of strings (presumably CSS declarations). CSS itself
@@ -41,7 +41,7 @@ const lexNested = (raw: string): [string | null, string | null, string] => {
 				netBrackets = netBrackets - 1;
 				if (netBrackets === 0) {
 					// the end
-					const selector = raw.slice(0, start);
+					const selector = raw.slice(0, start).trim();
 					const body = raw.slice(start + 1, i);
 					const remaining = raw.slice(i + 1);
 					return [selector, body, remaining];
@@ -138,7 +138,9 @@ export const StaticCache = (): Cache => {
  *
  * Many thanks to @emotion/sheet, which is used under the hood for this.
  *
- * @param container target HTML element to inject rules into.
+ * @param container target HTML element to inject rules into. Typically
+ * `document.head` but you can set this to an iframe or shadow-dom or other as
+ * required.
  * @param key added as `data-emotion` attribute to identify the source of rules.
  * @param speedy boolean flag to determine how rules are added. If true, then
  * rules are added into a single stylesheet via insertRule, which is fast but
@@ -159,7 +161,10 @@ export const DynamicCache = (
 
 	return {
 		add: (style: CSS) => {
-			sheet.insert(serialise(style));
+			log("adding styles!", style);
+			const rule = serialise(style);
+			log("rule is: ", rule);
+			sheet.insert(rule);
 		},
 		flush: () => {
 			sheet.flush();
@@ -205,8 +210,8 @@ export const cssGen = (
 			res += s.trim();
 			res += args[i] || "";
 		});
-		const topClass = "." + hash(res);
-		const rules = parse(res, topClass);
+		const topClass = "css-" + hash(res);
+		const rules = parse(res, "." + topClass);
 
 		// add to cache
 		rules.forEach((r) => cache.add(r));

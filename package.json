@@ -8,7 +8,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "test": "jest",
-		"build": "esbuild index.ts --bundle --minify --format=esm --outfile=index.js"
+		"build": "esbuild index.ts --bundle --outdir=www --minify --format=esm",
+		"serve": "esbuild index.ts --servedir=www --outdir=www --bundle --minify --format=esm"
   },
   "devDependencies": {
     "@types/jest": "^26.0.22",

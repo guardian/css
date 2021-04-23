@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>@guardian/css test page</title>
+  </head>
+  <body>
+    <script type="module">
+		import { DynamicCache, cssGen } from './index.js';
+		import { h, Component, render } from 'https://unpkg.com/preact?module';
+  		import htm from 'https://unpkg.com/htm?module';
+
+  		const html = htm.bind(h);
+
+		const cache = DynamicCache(document.head, 'test', false);
+		const css = cssGen(cache);
+
+		const coolStyles = css`
+			background-color: blue;
+
+			:hover {
+				background-color: green;
+			}
+		`;
+
+		const App = (props) => {
+    		return html`<h1 class=${coolStyles}>Hello ${props.name}!</h1>`;
+  		}
+
+		render(html`<${App} name="World" />`, document.body);
+	</script>
+  </body>
+</html>
