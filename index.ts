@@ -11,7 +11,7 @@ export interface CSS {
 	body: string[];
 }
 
-const lexRule = (raw: string): [string | null, string] => {
+const lexDeclaration = (raw: string): [string | null, string] => {
 	for (let i = 0; i < raw.length; i = i + 1) {
 		switch (raw[i]) {
 			case "{":
@@ -21,7 +21,7 @@ const lexRule = (raw: string): [string | null, string] => {
 		}
 	}
 
-	return [raw, ""]; // asume entire thing is rule if no terminating semi-colon.
+	return [raw, ""]; // asume entire thing is declaration if no terminating semi-colon.
 };
 
 const lexNested = (raw: string): [string | null, string | null, string] => {
@@ -80,11 +80,11 @@ export const parse = (raw: string, topClass: string): CSS[] => {
 			continue;
 		}
 
-		var [rule, rest] = lexRule(remaining);
-		log("rule", rule, ",", rest);
-		if (rule) {
+		var [declaration, rest] = lexDeclaration(remaining);
+		log("declaration", declaration, ",", rest);
+		if (declaration) {
 			remaining = rest;
-			currentCSS.body.push(rule);
+			currentCSS.body.push(declaration);
 			continue;
 		}
 
@@ -95,6 +95,7 @@ export const parse = (raw: string, topClass: string): CSS[] => {
 	return css;
 };
 
+// serialise returns a CSS rule from a CSS data structure.
 export const serialise = (css: CSS): string => {
 	return `${css.selector}{${css.body.join("")}}`;
 };
@@ -105,45 +106,19 @@ const log = (...things: any[]): void => {
 	}
 };
 
-// Cache helps avoid work, and can also be shipped client-side to save time on initial render?
-
-/**
- * css is the main utility of this library. It is used as tagged template
- * literal as follows:
- *
- *     css`
- * 	       color: blue;
- *         width: red;
- *     `
- *
- * You can place any CSS in the template literal.
- *
- * @returns an array of CSS rules or throws an error if invalid CSS
- */
-export const cssPure = (
-	strings: TemplateStringsArray,
-	...args: string[]
-): CSS[] => {
-	// zip strings and args together
-	let res = "";
-
-	strings.forEach((s, i) => {
-		res += s.trim();
-		res += args[i] || "";
-	});
-	const h = hash(res);
-	return parse(res, "." + h);
-};
-
-type cssTTL = (strings: TemplateStringsArray, ...args: string[]) => string[];
-
+// Cache helps avoid work and is used to output styles to a target.
 interface Cache {
 	add: (style: CSS) => void;
 	flush: () => void;
 	serialise: () => string;
 }
 
-const StaticCache = (): Cache => {
+/**
+ * StaticCache is suitable for use server-side or on the client when you know
+ * your styles won't change. Simply call its `serialise` method when done to
+ * output CSS, which you can then wrap in style tags and insert.
+ */
+export const StaticCache = (): Cache => {
 	let data: CSS[] = [];
 
 	return {
@@ -157,10 +132,29 @@ const StaticCache = (): Cache => {
 	};
 };
 
-const SheetCache = (container: HTMLElement, key: string): Cache => {
+/**
+ * SheetCache is suitable for dynamic client-side use. It adds rules to the
+ * document in the specified container element.
+ *
+ * Many thanks to @emotion/sheet, which is used under the hood for this.
+ *
+ * @param container target HTML element to inject rules into.
+ * @param key added as `data-emotion` attribute to identify the source of rules.
+ * @param speedy boolean flag to determine how rules are added. If true, then
+ * rules are added into a single stylesheet via insertRule, which is fast but
+ * prevents editing of rules in dev tools. If false, then a separate style
+ * element is added for each rule, which is slow but better for debugging (e.g.
+ * local development).
+ */
+export const SheetCache = (
+	container: HTMLElement,
+	key: string,
+	speedy: boolean
+): Cache => {
 	const sheet = new StyleSheet({
 		key,
 		container,
+		speedy,
 	});
 
 	return {
@@ -172,4 +166,53 @@ const SheetCache = (container: HTMLElement, key: string): Cache => {
 		},
 		serialise: (): string => sheet.container.innerHTML,
 	};
+};
+
+/**
+ * cssGen is the main utility of this library. It accepts a Cache and returns a
+ * tagged template literal function, which you can use as follows:
+ *
+ * ```typescript
+ * const css = cssGen(myCache);
+ * css`
+ *     color: blue;
+ *     width: red;
+ * `;
+ * ```
+ *
+ * You can place any normal CSS in the template literal. You can also do nesting
+ * for pseudo-elements, pseudo-classes, and media-queries. E.g.
+ *
+ * ```typescript
+ * css`
+ *     color: blue;
+ *     :first-child { ... }
+ *     ::after { ... }
+ *     @media(...) { ... }
+ * `;
+ * ```
+ *
+ * @returns a CSS selector to use in your HTML.
+ */
+export const cssGen = (
+	cache: Cache
+): ((strings: TemplateStringsArray, ...args: string[]) => string) => {
+	const css = (strings: TemplateStringsArray, ...args: string[]): string => {
+		// zip strings and args together
+		let res = "";
+
+		strings.forEach((s, i) => {
+			res += s.trim();
+			res += args[i] || "";
+		});
+		const topClass = "." + hash(res);
+		const rules = parse(res, topClass);
+
+		// add to cache
+		rules.forEach((r) => cache.add(r));
+
+		return topClass;
+	};
+
+	return css;
 };
