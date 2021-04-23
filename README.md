@@ -33,3 +33,9 @@ not support:
 -   `&` - in Emotion this is used to add a parent selector but is not included
     here because it is considered an anti-pattern and can be achieved in other
     ways.
+
+## Development
+
+    $ yarn build // build production bundle
+    $ yarn serve // test out with local server
+    $ yarn test // run unit tests
