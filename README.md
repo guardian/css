@@ -3,18 +3,33 @@
 A smaller (in API and bundlesize) version of Emotion. Note, we do (in gratitude)
 reuse both @emotion/sheet and @emotion/hash though.
 
-Specifically, the interface exposed is limited to:
+## Getting started
 
--   `css` - the 'old-school' version of this which returns a string classname
-    and does not require JSX integration
--   `globalCss` - like `css` but injects styles globally. This is invariably
-    necessary even if it goes against scoped CSS.
--   `cssRule` - like `css` but without side-effects. It simply returns the rule
-    that would normally be added to the DOM. Useful for testing purposes.
+@guardian/css only supports defining CSS via tagged template literals. First,
+configure a Cache. There are two types:
+
+-   `StaticCache` - outputs styles as a string (for server-side or static
+    client-side use)
+-   `DynamicCache` - injects styles into the document (for client-side use)
+
+Instantiate what you need, and then pass it to `cssGen`:
+
+    $ const cache = new StaticCache();
+    $ const css = cssGen(cache);
+
+You can then use `css` similar to @emotion. For example:
+
+    $ // interpolation
+    $ const someStyles = css`color: ${brand.blue}`;
+
+    $ // nesting of pseudo-elements, pseudo-classes, and media-queries
+    $ const nestedStyles = css`
+    $ ::after { ... }
+    $ `;
 
 Note, `css` here is not as fully featured as Emotion's. In particular, it does
 not support:
 
--   `&` - this is used to add a parent selector. This is not included here
-    because it is considered an anti-pattern and you can achieve this in other
+-   `&` - in Emotion this is used to add a parent selector but is not included
+    here because it is considered an anti-pattern and can be achieved in other
     ways.

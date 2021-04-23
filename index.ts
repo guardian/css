@@ -133,7 +133,7 @@ export const StaticCache = (): Cache => {
 };
 
 /**
- * SheetCache is suitable for dynamic client-side use. It adds rules to the
+ * DynamicCache is suitable for dynamic client-side use. It adds rules to the
  * document in the specified container element.
  *
  * Many thanks to @emotion/sheet, which is used under the hood for this.
@@ -146,7 +146,7 @@ export const StaticCache = (): Cache => {
  * element is added for each rule, which is slow but better for debugging (e.g.
  * local development).
  */
-export const SheetCache = (
+export const DynamicCache = (
 	container: HTMLElement,
 	key: string,
 	speedy: boolean
