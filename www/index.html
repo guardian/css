@@ -6,13 +6,14 @@
   </head>
   <body>
     <script type="module">
-		import { DynamicCache, cssGen } from './index.js';
+		import { DynamicCache, cssGen, debug } from './index.js';
 		import { h, Component, render } from 'https://unpkg.com/preact?module';
   		import htm from 'https://unpkg.com/htm?module';
 
   		const html = htm.bind(h);
 
-		const cache = DynamicCache(document.head, 'test', false);
+		debug = true;
+		const cache = DynamicCache(document.head, 'test', true);
 		const css = cssGen(cache);
 
 		const coolStyles = css`

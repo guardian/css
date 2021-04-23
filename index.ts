@@ -1,7 +1,7 @@
 import { StyleSheet } from "@emotion/sheet";
 import hash from "@emotion/hash";
 
-export let debug = true; // set to true for debug logging
+export let debug = false; // set to true for debug logging
 
 // CSS is a simplified model for CSS, but sufficient for our purposes. The body
 // is an ordered collection of strings (presumably CSS declarations). CSS itself
