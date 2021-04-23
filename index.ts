@@ -4,7 +4,7 @@ import hash from "@emotion/hash";
 export let debug = false; // set to true for debug logging
 
 // CSS is a simplified model for CSS, but sufficient for our purposes. The body
-// is an ordered collection of strings (presumably CSS rules). CSS itself
+// is an ordered collection of strings (presumably CSS declarations). CSS itself
 // doesn't nest so this can be flat too.
 export interface CSS {
 	selector: string;
